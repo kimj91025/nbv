@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURELIA 极境旅居 — 南极高原奢华静修与冰川体验</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+    :root {
+      --depth: 0;
+      --bg-r: 255;
+      --bg-g: 255;
+      --bg-b: 255;
+      --text-primary: #0f172a;
+      --text-muted: #64748b;
+      --accent: #0284c7;
+      --cursor-x: 50vw;
+      --cursor-y: 50vh;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      background-color: #ffffff;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      color: var(--text-primary);
+      background-color: rgb(var(--bg-r), var(--bg-g), var(--bg-b));
+      overflow-x: hidden;
+      transition: background-color 0.25s linear;
+    }
+
+    .font-serif-sc {
+      font-family: 'Noto Serif SC', Georgia, serif;
+    }
+
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    }
+
+    /* Fixed atmospheric canvases */
+    #atmosphere-canvas,
+    #eyes-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    #atmosphere-canvas {
+      z-index: 30;
+    }
+    #eyes-canvas {
+      z-index: 35;
+    }
+
+    /* Vignette & Film Grain overlay */
+    #horror-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 40;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.85) 100%);
+      transition: opacity 0.2s linear;
+    }
+
+    #scanlines {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 41;
+      opacity: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.16) 0px,
+        rgba(0, 0, 0, 0.16) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+    }
+
+    /* Glitch text effect */
+    .glitch-text {
+      position: relative;
+      display: inline-block;
+    }
+    .glitch-active {
+      animation: glitch-skew 3.5s infinite linear alternate-reverse;
+    }
+    .glitch-active::before,
+    .glitch-active::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.75;
+      pointer-events: none;
+    }
+    .glitch-active::before {
+      color: #ef4444;
+      transform: translate(-2px, 0);
+      clip-path: polygon(0 0, 100% 0, 100% 38%, 0 38%);
+      animation: glitch-slice 2.4s infinite steps(3);
+    }
+    .glitch-active::after {
+      color: #2dd4bf;
+      transform: translate(2px, 0);
+      clip-path: polygon(0 62%, 100% 62%, 100% 100%, 0 100%);
+      animation: glitch-slice 1.9s infinite steps(4) reverse;
+    }
+
+    @keyframes glitch-skew {
+      0%, 88%, 100% { transform: skewX(0deg); }
+      90% { transform: skewX(-4deg); }
+      93% { transform: skewX(5deg); }
+      96% { transform: skewX(-2deg); }
+    }
+
+    @keyframes glitch-slice {
+      0% { transform: translate(-2px, 1px); }
+      33% { transform: translate(2px, -1px); }
+      66% { transform: translate(-1px, 2px); }
+      100% { transform: translate(1px, -2px); }
+    }
+
+    /* Subtle non-Euclidean tilt for uncanny cards */
+    .uncanny-tilt-1 { transform: rotate(-0.6deg) skewX(-0.4deg); }
+    .uncanny-tilt-2 { transform: rotate(0.9deg) skewY(-0.5deg); }
+    .uncanny-tilt-3 { transform: rotate(-1.6deg) skewX(1.1deg); }
+
+    /* Flashlight abyss section */
+    #abyss-corridor {
+      position: relative;
+      background: #030406;
+    }
+    .flashlight-mask {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(
+        circle 240px at var(--local-x, 50%) var(--local-y, 50%),
+        rgba(220, 38, 38, 0.08) 0%,
+        rgba(14, 165, 233, 0.03) 30%,
+        rgba(2, 3, 5, 0.94) 75%,
+        rgba(0, 0, 0, 0.99) 100%
+      );
+      z-index: 15;
+    }
+
+    /* Climax breathing & dolly zoom */
+    @keyframes slow-breathe {
+      0%, 100% { transform: scale(1.02); filter: contrast(1.08) saturate(0.95); }
+      50% { transform: scale(1.08); filter: contrast(1.22) saturate(1.15); }
+    }
+    .shoggoth-breathe {
+      animation: slow-breathe 9s ease-in-out infinite;
+    }
+
+    @keyframes flare-flicker {
+      0%, 100% { opacity: 0.45; }
+      18% { opacity: 0.72; }
+      22% { opacity: 0.32; }
+      55% { opacity: 0.65; }
+      78% { opacity: 0.25; }
+      83% { opacity: 0.78; }
+    }
+    .flare-glow {
+      animation: flare-flicker 4.2s infinite;
+    }
+
+    /* Micro tremor for extreme depth */
+    @keyframes micro-tremor {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(-1.5px, 1px); }
+      50% { transform: translate(1.5px, -1px); }
+      75% { transform: translate(-1px, -1.5px); }
+    }
+    .tremor-active {
+      animation: micro-tremor 0.14s infinite;
+    }
+
+    /* Final Gaze Overlay */
+    #abyss-gaze-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: #000000;
+      display: none;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+    #abyss-gaze-modal.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* Sonar mode filters */
+    .filter-optical { filter: contrast(1.05) brightness(0.96); }
+    .filter-thermal { filter: contrast(1.55) hue-rotate(195deg) saturate(2.6) brightness(0.85); }
+    .filter-geometry { filter: grayscale(0.85) contrast(1.85) brightness(0.75); }
+
+    /* Custom thin scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0b0f17; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+  </style>
+</head>
+<body class="antialiased selection:bg-sky-200 selection:text-slate-900">
+
+  <!-- Procedural Atmospheric Snow/Ash & Watching Eyes Canvases -->
+  <canvas id="atmosphere-canvas" aria-hidden="true"></canvas>
+  <canvas id="eyes-canvas" aria-hidden="true"></canvas>
+  <div id="horror-overlay" aria-hidden="true"></div>
+  <div id="scanlines" aria-hidden="true"></div>
+
+  <!-- Top Navigation Bar (mutates as user descends) -->
+  <header id="top-nav" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/90 backdrop-blur-md border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <a href="#hero-section" id="brand-logo" class="flex items-center gap-2.5 group">
+        <span id="brand-icon" class="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center font-bold text-sm shadow-sm transition-colors">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+          </svg>
+        </span>
+        <div class="flex flex-col leading-none">
+          <span id="brand-title" class="font-semibold tracking-wider text-slate-900 text-sm sm:text-base transition-colors">AURELIA</span>
+          <span id="brand-sub" class="text-[10px] tracking-widest text-slate-400 uppercase mt-0.5">POLAR SANCTUARY</span>
+        </div>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-7 text-sm font-medium">
+        <a href="#hero-section" id="nav-link-1" class="text-slate-600 hover:text-sky-600 transition-colors">极境体验</a>
+        <a href="#packages-section" id="nav-link-2" class="text-slate-600 hover:text-sky-600 transition-colors">定制行程</a>
+        <a href="#testimonials-section" id="nav-link-3" class="text-slate-600 hover:text-sky-600 transition-colors">旅者回响</a>
+        <a href="#mountains-section" id="nav-link-4" class="text-slate-600 hover:text-sky-600 transition-colors">高原图鉴</a>
+      </nav>
+
+      <div class="flex items-center gap-2.5">
+        <button id="audio-toggle-btn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition-all" title="切换环境音效">
+          <span id="audio-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+          <span id="audio-label">开启音效</span>
+        </button>
+        <button id="open-booking-btn" type="button" class="px-4 py-2 rounded-full text-xs sm:text-sm font-medium bg-slate-900 text-white hover:bg-sky-700 transition-all shadow-sm">
+          预约极地之旅
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Depth Telemetry HUD (only fades in after 32% scroll) -->
+  <aside id="depth-hud" class="fixed right-4 bottom-4 z-50 opacity-0 pointer-events-none transition-opacity duration-500">
+    <div class="bg-black/80 backdrop-blur-md border border-slate-700/70 rounded-lg px-3.5 py-2.5 text-[11px] font-mono-tech text-slate-300 shadow-2xl space-y-1 min-w-[195px]">
+      <div class="flex items-center justify-between gap-4">
+        <span class="text-slate-500">DEPTH</span>
+        <span id="hud-depth" class="text-teal-400 font-bold">0 m</span>
+      </div>
+      <div class="flex items-center justify-between gap-4">
+        <span class="text-slate-500">TEMP</span>
+        <span id="hud-temp" class="text-sky-300">-12.4 °C</span>
+      </div>
+      <div class="flex items-center justify-between gap-4">
+        <span class="text-slate-500">GEOMETRY</span>
+        <span id="hud-geo" class="text-amber-400">EUCLIDEAN</span>
+      </div>
+      <div class="w-full h-1 bg-slate-800 rounded overflow-hidden mt-1">
+        <div id="hud-bar" class="h-full bg-teal-400 transition-all duration-150" style="width: 0%;"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Subtle audio recommendation toast when entering uncanny zone -->
+  <div id="audio-toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 z-50 hidden">
+    <div class="bg-slate-900/95 border border-slate-700 text-slate-200 px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-3 text-xs">
+      <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+      <span>冰层下方传来异常低频声波 — 建议开启环境音效以获得完整体验</span>
+      <button id="toast-enable-audio" type="button" class="px-2.5 py-1 rounded-full bg-red-600/90 hover:bg-red-500 text-white font-medium transition-colors">开启</button>
+      <button id="toast-close" type="button" class="text-slate-400 hover:text-white px-1">✕</button>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- ACT I: NORMAL LUXURY MARKETING WEBSITE (0% - 22%)                     -->
+  <!-- ===================================================================== -->
+  <main id="main-content">
+    <section id="hero-section" class="pt-28 pb-20 sm:pt-36 sm:pb-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <!-- Returner Easter Egg Banner (hidden initially, revealed if user returns from the abyss) -->
+      <div id="returner-banner" class="hidden mb-8 max-w-xl mx-auto text-center px-4 py-2 rounded-full bg-red-50 border border-red-200 text-red-800 text-xs font-mono-tech">
+        欢迎回到海面。冰层底部的东西记住了你的频率。
+      </div>
+
+      <div class="text-center max-w-3xl mx-auto">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-xs font-medium mb-6">
+          <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+          <span>2026 南极高原静修季 · 现已开放私人预订</span>
+        </div>
+
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 leading-[1.15]">
+          探索地球最后的<span class="text-sky-600">纯净之境</span>
+        </h1>
+
+        <p class="mt-6 text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
+          AURELIA 极境旅居坐落于南纬 77° 冰原边缘。我们以极简北欧建筑美学与零碳地热恒温技术，为您呈现世界尽头的静谧冰川、纯净空气与无与伦比的私密疗愈。
+        </p>
+
+        <div class="mt-9 flex flex-wrap items-center justify-center gap-4">
+          <a href="#packages-section" class="px-7 py-3.5 rounded-full bg-slate-900 text-white text-sm font-medium hover:bg-sky-700 transition-all shadow-md hover:shadow-lg">
+            探索定制行程
+          </a>
+          <button id="hero-consult-btn" type="button" class="px-7 py-3.5 rounded-full bg-white text-slate-800 text-sm font-medium border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all">
+            预约私人旅行顾问
+          </button>
+        </div>
+      </div>
+
+      <!-- Pristine Luxury Hero Photo -->
+      <div class="mt-14 relative rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 bg-slate-100">
+        <img
+          src="images/hero-pavilion.jpg"
+          alt="AURELIA 南极冰川全景玻璃度假木屋"
+          class="w-full h-auto max-h-[620px] object-cover block"
+        />
+        <div class="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-auto bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/60 shadow-lg flex items-center gap-3 text-xs text-slate-700">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>南极洲 · 罗斯海冰架东岸观景台 · 今日晴朗 -8°C</span>
+        </div>
+      </div>
+
+      <!-- Clean Corporate Stats Grid (subtle mutation triggers as user scrolls deeper) -->
+      <div class="mt-14 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div class="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+          <div id="stat-1" class="text-2xl sm:text-3xl font-bold text-slate-900">99.8%</div>
+          <div id="stat-1-label" class="text-xs sm:text-sm text-slate-500 mt-1">宾客年度满意度</div>
+        </div>
+        <div class="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+          <div id="stat-2" class="text-2xl sm:text-3xl font-bold text-slate-900">3,400 m</div>
+          <div id="stat-2-label" class="text-xs sm:text-sm text-slate-500 mt-1">高原全景海拔视野</div>
+        </div>
+        <div class="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+          <div id="stat-3" class="text-2xl sm:text-3xl font-bold text-slate-900">14 间</div>
+          <div id="stat-3-label" class="text-xs sm:text-sm text-slate-500 mt-1">独立地热恒温套房</div>
+        </div>
+        <div class="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+          <div id="stat-4" class="text-2xl sm:text-3xl font-bold text-slate-900">24/7</div>
+          <div id="stat-4-label" class="text-xs sm:text-sm text-slate-500 mt-1">极地医疗与卫星通讯</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- ACT II: THE UNCANNY VALLEY — SUBTLE ANOMALIES & CREEPING DREAD        -->
+    <!-- ===================================================================== -->
+    <section id="packages-section" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div>
+          <p class="text-xs font-semibold tracking-widest uppercase text-sky-600 mb-2" id="pkg-eyebrow">EXPEDITION TIERS</p>
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight transition-colors" id="pkg-heading">甄选极地静修与勘探行程</h2>
+          <p class="mt-3 text-sm sm:text-base max-w-xl opacity-80" id="pkg-sub">
+            从海岸冰川的温暖壁炉，到内陆高原鲜为人知的古老岩层——选择您希望深入的尺度。
+          </p>
+        </div>
+
+        <!-- Working Interactive Package Filter Tabs -->
+        <div class="inline-flex p-1 rounded-xl bg-slate-200/70 backdrop-blur-sm border border-slate-300/60 self-start" role="tablist">
+          <button type="button" data-tier-tab="leisure" class="tier-tab px-4 py-2 rounded-lg text-xs font-medium bg-white text-slate-900 shadow-sm transition-all">7日海岸静修</button>
+          <button type="button" data-tier-tab="science" class="tier-tab px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition-all">14日内陆科考</button>
+          <button type="button" data-tier-tab="deep" class="tier-tab px-4 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-red-700 transition-all">深层钻探 [受限]</button>
+        </div>
+      </div>
+
+      <div id="packages-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <!-- Card 1: Normal -->
+        <article class="rounded-3xl p-7 bg-white/95 border border-slate-200 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-sky-600">Tier 01</span>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium">安全区域</span>
+            </div>
+            <h3 class="mt-4 text-xl font-bold text-slate-900">冰川静谧尊享</h3>
+            <p class="mt-2 text-sm text-slate-500">适合首次造访极地的宾客，全程恒温舒适，远离内陆风带。</p>
+            <div class="mt-6 text-3xl font-bold text-slate-900" data-price-leisure="¥ 188,000" data-price-science="¥ 246,000" data-price-deep="¥ 246,000 (仅限地表)">¥ 188,000</div>
+            <ul class="mt-6 space-y-3 text-sm text-slate-600">
+              <li class="flex items-start gap-2"><span class="text-sky-500">✓</span> 全景玻璃木屋与私人地热温泉</li>
+              <li class="flex items-start gap-2"><span class="text-sky-500">✓</span> 米其林主厨定制极地有机餐单</li>
+              <li class="flex items-start gap-2"><span class="text-sky-500">✓</span> 海岸企鹅栖息地轻徒步向导</li>
+              <li class="flex items-start gap-2"><span class="text-sky-500">✓</span> 保证不越过南纬 77°14' 警戒线</li>
+            </ul>
+          </div>
+          <button type="button" data-plan="冰川静谧尊享" class="select-plan-btn mt-8 w-full py-3 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-sky-700 transition-colors">
+            预订此行程
+          </button>
+        </article>
+
+        <!-- Card 2: Slightly Uncanny -->
+        <article class="rounded-3xl p-7 bg-slate-50/95 border border-slate-300 shadow-md flex flex-col justify-between uncanny-tilt-1 transition-all">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Tier 02</span>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-medium">需签署保密协议</span>
+            </div>
+            <h3 class="mt-4 text-xl font-bold text-slate-900">内陆高原科考计划</h3>
+            <p class="mt-2 text-sm text-slate-600">搭乘履带雪车深入未测绘高原，近距离观测异常黑色板岩山脉。</p>
+            <div class="mt-6 text-3xl font-bold text-slate-900" data-price-leisure="¥ 328,000" data-price-science="¥ 412,000" data-price-deep="¥ 412,000 + 精神评估">¥ 328,000</div>
+            <ul class="mt-6 space-y-3 text-sm text-slate-700">
+              <li class="flex items-start gap-2"><span class="text-slate-500">✓</span> 极地防风帐篷与军用级声呐设备</li>
+              <li class="flex items-start gap-2"><span class="text-slate-500">✓</span> 冰芯钻探观摩（前寒武纪地层）</li>
+              <li class="flex items-start gap-2"><span class="text-amber-600">!</span> 夜间请佩戴隔音耳塞，忽略风中的笛声</li>
+              <li class="flex items-start gap-2"><span class="text-amber-600">!</span> 严禁触碰任何五角星状的规则岩石</li>
+            </ul>
+          </div>
+          <button type="button" data-plan="内陆高原科考计划" class="select-plan-btn mt-8 w-full py-3 rounded-xl bg-slate-800 text-slate-100 text-sm font-medium hover:bg-slate-700 transition-colors">
+            申请科考许可
+          </button>
+        </article>
+
+        <!-- Card 3: Disturbing / Glitching -->
+        <article class="rounded-3xl p-7 bg-slate-900/95 border border-teal-900/70 text-slate-200 shadow-2xl flex flex-col justify-between uncanny-tilt-3 transition-all">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono-tech uppercase tracking-wider text-teal-400">SECTOR 04 // 禁止访问</span>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-red-950 text-red-400 border border-red-900 font-mono-tech">失联</span>
+            </div>
+            <h3 class="mt-4 text-xl font-bold text-white glitch-text glitch-active" data-text="黑山冰层下潜协议">黑山冰层下潜协议</h3>
+            <p class="mt-2 text-sm text-slate-400">穿越高度超过一万米的黑色山脊。进入斜坡。不要回头计数跟着你的影子。</p>
+            <div class="mt-6 text-2xl font-mono-tech font-bold text-red-400" data-price-leisure="¥ [数据损毁]" data-price-science="不可逆转" data-price-deep="TEKELI-LI">¥ [数据损毁]</div>
+            <ul class="mt-6 space-y-3 text-sm text-slate-300 font-mono-tech text-xs">
+              <li class="flex items-start gap-2"><span class="text-red-500">×</span> 4号营地发掘记录（14具未知标本）</li>
+              <li class="flex items-start gap-2"><span class="text-red-500">×</span> 指南针失效，所有角度均不等于 90°</li>
+              <li class="flex items-start gap-2"><span class="text-red-500">×</span> 地下热泉温度异常：+14.2°C</li>
+              <li class="flex items-start gap-2"><span class="text-red-500">×</span> <span class="line-through opacity-60">包含返程机票</span> 门已经从里面锁上了</li>
+            </ul>
+          </div>
+          <button type="button" id="cursed-tier-btn" class="mt-8 w-full py-3 rounded-xl bg-red-950/80 border border-red-800/80 text-red-300 text-xs font-mono-tech tracking-wider hover:bg-red-900 transition-colors">
+            继续向下滚动查看现场记录 ↓
+          </button>
+        </article>
+      </div>
+    </section>
+
+    <!-- Testimonials that spiral into horror -->
+    <section id="testimonials-section" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="max-w-2xl mb-12">
+        <p class="text-xs font-mono-tech tracking-widest uppercase text-slate-400 mb-2" id="test-eyebrow">VERIFIED GUEST LOGS</p>
+        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight" id="test-heading">旅者真实回响</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Review 1: Normal -->
+        <div class="p-6 rounded-2xl bg-white/90 border border-slate-200/80 text-slate-800 shadow-sm">
+          <div class="text-amber-400 text-sm mb-3">★★★★★</div>
+          <p class="text-sm leading-relaxed text-slate-600">
+            “推开落地窗就是蓝白色的冰山，清晨手冲咖啡的香气混合着极地清冽的空气，是我此生最宁静的一周。管家团队非常周到。”
+          </p>
+          <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+            <span class="font-semibold text-slate-700">林微 · 上海</span>
+            <span>2026-01-14</span>
+          </div>
+        </div>
+
+        <!-- Review 2: Unsettling -->
+        <div class="p-6 rounded-2xl bg-slate-800/85 border border-slate-700 text-slate-200 shadow-lg uncanny-tilt-2">
+          <div class="text-amber-500/70 text-sm mb-3 font-mono-tech">★★★☆☆ <span class="text-[10px] text-slate-400 ml-1">[已编辑]</span></div>
+          <p class="text-sm leading-relaxed text-slate-300">
+            “前三天很完美。但第四天我们飞越了那道黑色山脉——仪表显示海拔超过了 <span class="text-teal-300 font-mono-tech">10,900米</span>。山顶的轮廓太整齐了，像是某种巨型立方体和五棱柱。夜里暴风雪刮过岩缝时，发出了像长笛一样的音阶。”
+          </p>
+          <div class="mt-5 pt-4 border-t border-slate-700/80 flex items-center justify-between text-xs text-slate-400 font-mono-tech">
+            <span class="text-slate-200">周博士 · 地质测绘</span>
+            <span>失联前 4 小时</span>
+          </div>
+        </div>
+
+        <!-- Review 3: Chilling Lovecraftian Transmission -->
+        <div class="p-6 rounded-2xl bg-black/90 border border-red-900/60 text-red-100 shadow-2xl uncanny-tilt-3">
+          <div class="text-red-500 text-xs font-mono-tech mb-3 tracking-widest">● REC // 加密无线电截获</div>
+          <p class="text-sm leading-relaxed text-slate-300 font-serif-sc">
+            “不要相信上面的宣传照。我们从两千万年前的深层板岩里挖出了十四个桶状标本。莱克坚持在帐篷里解剖其中一个。凌晨三点，暖气让冰融化了。我们冲进去的时候，解剖台是空的。所有的雪橇犬都被整齐地切成了五等分。”
+          </p>
+          <div class="mt-5 pt-4 border-t border-red-950 flex items-center justify-between text-xs text-red-400/80 font-mono-tech">
+            <span>密斯卡托尼克 4 号营地</span>
+            <span>77°14'S</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- ACT III: GROTESQUE & CYCLOPEAN DREAD (45% - 72%)                      -->
+    <!-- ===================================================================== -->
+    <section id="mountains-section" class="py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-slate-200">
+      <div class="border-t border-slate-800 pt-16 mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div class="max-w-2xl">
+          <div class="inline-flex items-center gap-2 text-xs font-mono-tech text-teal-400 tracking-widest uppercase mb-3">
+            <span class="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
+            <span>SIGNAL INTERCEPTED // 77°14'S, 166°28'E</span>
+          </div>
+          <h2 class="text-3xl sm:text-5xl font-serif-sc font-bold text-white tracking-wide">
+            疯狂山脉的背面
+          </h2>
+          <p class="mt-4 text-sm sm:text-base text-slate-400 leading-relaxed">
+            越过极地高原的尽头，黑色的玄武岩尖峰刺破病态的绿紫色极光。它们不是山——那是比地球上任何脊椎动物还要古老十亿年的巨石死城。风从无底的石廊中穿过，发出非人的笛音。
+          </p>
+        </div>
+
+        <!-- Working Interactive Sensor Mode Switcher -->
+        <div class="flex flex-wrap items-center gap-2 font-mono-tech text-xs">
+          <button type="button" data-sensor="optical" class="sensor-btn px-3.5 py-2 rounded-lg bg-teal-500/20 border border-teal-400/60 text-teal-300 transition-all">光学影像</button>
+          <button type="button" data-sensor="thermal" class="sensor-btn px-3.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition-all">热成像异常</button>
+          <button type="button" data-sensor="geometry" class="sensor-btn px-3.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition-all">非欧几何测绘</button>
+        </div>
+      </div>
+
+      <!-- Mountains of Madness Cinema Frame -->
+      <div class="relative rounded-2xl overflow-hidden border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.9)] bg-black">
+        <img
+          id="mountains-img"
+          src="images/mountains-of-madness.jpg"
+          alt="疯狂山脉巨型黑色玄武岩遗迹与孤立的橘色探险帐篷"
+          class="w-full h-auto max-h-[680px] object-cover block transition-all duration-500 filter-optical"
+        />
+
+        <!-- Dynamic Non-Euclidean SVG Overlay (visible in geometry/thermal mode) -->
+        <svg id="geometry-overlay" class="absolute inset-0 w-full h-full pointer-events-none opacity-0 transition-opacity duration-500" viewBox="0 0 1200 675" preserveAspectRatio="none">
+          <g stroke="rgba(45, 212, 191, 0.55)" stroke-width="1" fill="none">
+            <polygon points="820,80 960,210 905,390 735,390 680,210" stroke-dasharray="6 4" />
+            <line x1="820" y1="80" x2="735" y2="390" />
+            <line x1="820" y1="80" x2="905" y2="390" />
+            <line x1="680" y1="210" x2="960" y2="210" />
+            <circle cx="405" cy="590" r="42" stroke="rgba(239, 68, 68, 0.85)" stroke-width="1.5" />
+            <line x1="447" y1="590" x2="620" y2="590" stroke="rgba(239, 68, 68, 0.85)" />
+          </g>
+          <text x="630" y="585" fill="#f87171" font-family="JetBrains Mono, monospace" font-size="13">营地 04: 生命体征 = 0</text>
+          <text x="720" y="68" fill="#2dd4bf" font-family="JetBrains Mono, monospace" font-size="13">石柱倾角: 72.00° [非自然侵蚀]</text>
+        </svg>
+
+        <!-- Bottom telemetry bar -->
+        <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono-tech text-xs">
+          <div id="sensor-readout" class="text-slate-300">
+            [光学模式] 海拔高度计溢出 · 探测到人工切割的巨型五角柱廊 · 前方帐篷无应答
+          </div>
+          <div class="text-red-400 shrink-0">风速 142 km/h · 声学频率: 432Hz 异常谐波</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Grotesque Specimen Autopsy Terminal -->
+    <section id="specimen-section" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-slate-200">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
+        <!-- Left: Frozen Elder Thing Photo -->
+        <div class="lg:col-span-6 relative rounded-2xl overflow-hidden border border-slate-800 bg-black shadow-2xl flex flex-col">
+          <div class="relative flex-1 overflow-hidden">
+            <img
+              id="specimen-img"
+              src="images/elder-specimen.jpg"
+              alt="冰封在南极研究站冰块中的五角星头桶状古老者标本"
+              class="w-full h-full object-cover min-h-[380px] block transition-transform duration-700"
+            />
+            <div id="specimen-breach-overlay" class="absolute inset-0 bg-red-950/0 pointer-events-none transition-colors duration-700 flex items-center justify-center">
+              <span id="breach-stamp" class="hidden px-5 py-2 border-2 border-red-500 text-red-400 font-mono-tech text-lg sm:text-2xl tracking-[0.25em] bg-black/85 -rotate-6 shadow-2xl">
+                收容失效 // 冰柜已空
+              </span>
+            </div>
+            <div class="absolute top-4 left-4 px-3 py-1 rounded bg-black/80 border border-slate-700 font-mono-tech text-[11px] text-teal-300">
+              SPECIMEN #04 — "ELDER THING"
+            </div>
+          </div>
+
+          <!-- Live Brainwave / Pulse Canvas -->
+          <div class="bg-[#06090e] border-t border-slate-800 p-4">
+            <div class="flex items-center justify-between text-[11px] font-mono-tech mb-2">
+              <span class="text-slate-400">冷冻标本神经脉冲监测 (本应为直线)</span>
+              <span id="pulse-status" class="text-red-400 animate-pulse">14.2 Hz · 活跃</span>
+            </div>
+            <canvas id="pulse-canvas" class="w-full h-14 block rounded bg-black/80 border border-slate-900"></canvas>
+          </div>
+        </div>
+
+        <!-- Right: Interactive Autopsy Dossier -->
+        <div class="lg:col-span-6 rounded-2xl bg-[#090d14] border border-slate-800 p-6 sm:p-8 flex flex-col justify-between shadow-2xl">
+          <div>
+            <div class="flex items-center justify-between gap-2 pb-4 border-b border-slate-800">
+              <span class="font-mono-tech text-xs text-red-400 tracking-widest">CLASSIFIED // 4号营地解剖终端</span>
+              <span class="font-mono-tech text-[11px] text-slate-500">FILE_ID: M-1931-04</span>
+            </div>
+
+            <h3 class="mt-5 text-2xl sm:text-3xl font-serif-sc font-bold text-white">
+              “它既非植物，亦非动物。”
+            </h3>
+
+            <!-- Working Dossier Tabs -->
+            <div class="mt-6 flex flex-wrap gap-2 border-b border-slate-800 pb-4 font-mono-tech text-xs">
+              <button type="button" data-dossier="anatomy" class="dossier-tab px-3.5 py-2 rounded bg-slate-800 text-white border border-slate-600">解剖特征</button>
+              <button type="button" data-dossier="acoustics" class="dossier-tab px-3.5 py-2 rounded bg-transparent text-slate-400 border border-slate-800 hover:text-white">声学脉冲</button>
+              <button type="button" data-dossier="containment" class="dossier-tab px-3.5 py-2 rounded bg-transparent text-red-400 border border-red-900/60 hover:bg-red-950/50">检查冰柜状态</button>
+            </div>
+
+            <div id="dossier-content" class="mt-6 space-y-4 text-sm text-slate-300 leading-relaxed min-h-[220px]">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div class="mt-8 pt-5 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="text-xs font-mono-tech text-slate-500">
+              警告：继续下潜将脱离所有已知地质与通讯记录
+            </div>
+            <button id="evade-btn" type="button" class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-red-950 border border-slate-700 text-xs font-mono-tech text-slate-200 transition-all">
+              紧急撤离并返回顶部
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- ACT IV: EXTREME COSMIC HORROR CLIMAX — THE ABYSS & SHOGGOTH (72%-100%)-->
+    <!-- ===================================================================== -->
+
+    <!-- Interactive Flashlight Darkness Corridor -->
+    <section id="abyss-corridor" class="relative py-36 sm:py-48 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-red-950/40">
+      <div class="flashlight-mask" id="flashlight-layer"></div>
+
+      <div class="relative z-10 max-w-4xl mx-auto space-y-28 sm:space-y-36">
+        <div class="text-center">
+          <p class="font-mono-tech text-xs tracking-[0.35em] text-red-500/80 uppercase mb-4">
+            DEPTH: -4,200 METERS // LIGHT FAILURE
+          </p>
+          <p class="font-serif-sc text-2xl sm:text-4xl text-slate-200 leading-relaxed">
+            移动你的光标，在黑暗中寻找残存的墙壁刻痕。
+          </p>
+          <p class="mt-4 text-xs font-mono-tech text-slate-500">
+            （不要让视线离开黑暗的边缘——有些眼睛会在光束之外睁开）
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 sm:gap-16 items-center">
+          <div class="p-6 border-l-2 border-red-900/70 bg-black/40">
+            <div class="font-mono-tech text-[11px] text-red-500 mb-2">壁画拓片 #89</div>
+            <p class="font-serif-sc text-lg text-slate-300 leading-loose">
+              “就连那些降临自群星的五角星古老者，也在雕刻最后几幅壁画时颤抖了。他们在深渊的奴隶身上犯下了无法挽回的错误——那些由原生质构成的黑色肉块，开始发展出独立的意志。”
+            </p>
+          </div>
+          <div class="p-6 border-r-2 border-teal-900/50 bg-black/40 text-right">
+            <div class="font-mono-tech text-[11px] text-teal-500 mb-2">残损录音 03:17 AM</div>
+            <p class="font-serif-sc text-lg text-slate-300 leading-loose">
+              “前方的通道被一种恶臭的、像石油一样的浓雾填满了。地上到处是湿滑的粘液。我们听见了……它在模仿古老者的语言。它在黑暗里喊着……”
+            </p>
+          </div>
+        </div>
+
+        <div class="text-center py-12">
+          <div class="font-mono-tech text-3xl sm:text-6xl font-bold tracking-[0.28em] text-red-600/90 glitch-text glitch-active" data-text="TEKELI-LI... TEKELI-LI...">
+            TEKELI-LI... TEKELI-LI...
+          </div>
+          <p class="mt-6 font-serif-sc text-base sm:text-lg text-slate-400 max-w-xl mx-auto">
+            它像一列失控的黑色地下列车，正顺着非欧几里得的石廊，向你唯一的照明源涌来。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE FINAL HORROR MOVIE SCENE: THE SHOGGOTH IN THE CYCLOPEAN TUNNEL -->
+    <section id="climax-section" class="relative min-h-screen flex flex-col justify-between bg-black text-white overflow-hidden">
+      <!-- Full-bleed terrifying cinema backdrop -->
+      <div class="absolute inset-0 overflow-hidden">
+        <img
+          id="shoggoth-img"
+          src="images/shoggoth-abyss.jpg"
+          alt="深渊巨石隧道中由无数凝视的苍白眼睛构成的庞大黑色修格斯"
+          class="w-full h-full object-cover object-center shoggoth-breathe opacity-90"
+        />
+        <!-- Dying red flare atmospheric pulse -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/95"></div>
+        <div class="absolute inset-0 flare-glow pointer-events-none" style="background: radial-gradient(circle at 50% 78%, rgba(220, 38, 38, 0.28) 0%, transparent 48%);"></div>
+      </div>
+
+      <!-- Top stark warning -->
+      <div class="relative z-20 pt-20 px-4 sm:px-8 max-w-5xl mx-auto w-full text-center">
+        <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-red-950/70 border border-red-700/60 font-mono-tech text-[11px] tracking-[0.25em] text-red-300 uppercase">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          <span>UNKNOWN ENTITY DETECTED // DISTANCE: 18 METERS</span>
+        </div>
+      </div>
+
+      <!-- Center: Negative space so the monster & eyes command maximum visual tension -->
+      <div class="relative z-20 flex-1 min-h-[38vh]"></div>
+
+      <!-- Bottom: High-tension confrontation & final interactive trigger -->
+      <div class="relative z-20 pb-20 pt-10 px-4 sm:px-8 max-w-4xl mx-auto w-full text-center">
+        <h2 class="font-serif-sc text-3xl sm:text-5xl lg:text-6xl font-bold tracking-wider text-white drop-shadow-[0_4px_24px_rgba(0,0,0,1)]">
+          不要直视它的眼睛
+        </h2>
+        <p class="mt-5 text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,1)]">
+          那一团沸腾的、闪烁着病态油光的漆黑原生质正在隧道尽头膨胀。数十只苍白而湿润的眼球在粘液中此起彼伏地浮现，死死锁定了你所在的位置。应急信号弹只剩下最后三秒。
+        </p>
+
+        <div class="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button id="gaze-abyss-btn" type="button" class="px-8 py-4 rounded-full bg-red-700 hover:bg-red-600 text-white font-mono-tech text-xs sm:text-sm tracking-[0.2em] uppercase shadow-[0_0_40px_rgba(220,38,38,0.65)] border border-red-400/50 transition-all hover:scale-105">
+            解除光学滤镜 · 直视深渊
+          </button>
+          <button id="surface-escape-btn" type="button" class="px-6 py-4 rounded-full bg-black/70 hover:bg-slate-900 text-slate-400 hover:text-white font-mono-tech text-xs tracking-widest border border-slate-700/80 transition-all">
+            尝试逃回海面
+          </button>
+        </div>
+
+        <p class="mt-10 font-mono-tech text-[11px] text-slate-500 tracking-widest">
+          AURELIA POLAR SANCTUARY // 77°14'S // ALL COMMUNICATIONS TERMINATED
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- BOOKING MODAL (Looks normal at top, turns eerie upon submission)      -->
+  <!-- ===================================================================== -->
+  <div id="booking-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+    <div class="w-full max-w-md rounded-3xl bg-white text-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-200 relative">
+      <button id="close-booking-btn" type="button" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">✕</button>
+      <div id="booking-form-view">
+        <span class="text-xs font-semibold uppercase tracking-widest text-sky-600">PRIVATE RESERVATION</span>
+        <h3 class="mt-1 text-2xl font-bold text-slate-900">预约 AURELIA 极地行程</h3>
+        <p class="mt-2 text-xs text-slate-500">我们的极地礼宾团队将在 24 小时内与您联系，安排包机与防寒装备。</p>
+
+        <form id="booking-form" class="mt-6 space-y-4">
+          <div>
+            <label for="guest-name" class="block text-xs font-medium text-slate-700 mb-1">您的称呼</label>
+            <input id="guest-name" type="text" required placeholder="例如：林先生 / 陈女士" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+          </div>
+          <div>
+            <label for="guest-plan" class="block text-xs font-medium text-slate-700 mb-1">意向方案</label>
+            <select id="guest-plan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white">
+              <option value="冰川静谧尊享">冰川静谧尊享 (7日)</option>
+              <option value="内陆高原科考计划">内陆高原科考计划 (14日)</option>
+              <option value="黑山冰层下潜协议">黑山冰层下潜协议 [需审核]</option>
+            </select>
+          </div>
+          <div>
+            <label for="guest-date" class="block text-xs font-medium text-slate-700 mb-1">预计出发月份</label>
+            <input id="guest-date" type="month" value="2026-12" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+          </div>
+          <button type="submit" class="w-full py-3 rounded-xl bg-slate-900 hover:bg-sky-700 text-white text-sm font-medium transition-colors">
+            提交私人预约申请
+          </button>
+        </form>
+      </div>
+
+      <div id="booking-confirm-view" class="hidden text-center py-4">
+        <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-xl font-bold">✓</div>
+        <h4 class="mt-4 text-xl font-bold text-slate-900">预约登记已接收</h4>
+        <p id="booking-confirm-msg" class="mt-2 text-sm text-slate-600 leading-relaxed"></p>
+        <div id="booking-confirm-code" class="mt-4 px-4 py-2 rounded-lg bg-slate-100 font-mono-tech text-xs text-slate-700"></div>
+        <button id="booking-done-btn" type="button" class="mt-6 px-6 py-2.5 rounded-full bg-slate-900 text-white text-xs font-medium hover:bg-slate-800">
+          关闭窗口
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- FINAL ABYSSAL GAZE CLIMAX OVERLAY                                     -->
+  <!-- ===================================================================== -->
+  <div id="abyss-gaze-modal" class="flex-col items-center justify-center p-6 text-center overflow-hidden">
+    <div class="absolute inset-0 overflow-hidden">
+      <img
+        id="gaze-img"
+        src="images/shoggoth-abyss.jpg"
+        alt="直视深渊中的修格斯"
+        class="w-full h-full object-cover transition-transform duration-[4500ms] ease-out scale-105 opacity-80"
+      />
+      <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/35 to-black/95"></div>
+    </div>
+
+    <div class="relative z-10 max-w-2xl mx-auto space-y-6">
+      <div class="font-mono-tech text-xs tracking-[0.4em] text-red-500 animate-pulse">
+        OPTICAL FILTER DISABLED // SANITY CRITICAL
+      </div>
+      <h2 id="gaze-headline" class="font-serif-sc text-4xl sm:text-6xl font-bold text-white tracking-widest glitch-text glitch-active" data-text="它已经看见你了">
+        它已经看见你了
+      </h2>
+      <p id="gaze-subtext" class="font-mono-tech text-xs sm:text-sm text-red-200/90 leading-loose">
+        77°14'S · 冰层下方 4,200 米 · 所有逃生通道已被原生质封堵<br/>
+        TEKELI-LI · TEKELI-LI · TEKELI-LI
+      </p>
+      <div class="pt-6">
+        <button id="reset-experience-btn" type="button" class="px-7 py-3.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/30 text-white font-mono-tech text-xs tracking-[0.2em] transition-all">
+          [ 重新浮出水面 · 返回 AURELIA 首页 ]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // STATE
+      // =========================================================================
+      const state = {
+        depth: 0, // 0.0 -> 1.0
+        mouseX: window.innerWidth / 2,
+        mouseY: window.innerHeight / 2,
+        audioEnabled: false,
+        audioToastShown: false,
+        containmentBreached: false,
+        evadeClicks: 0,
+        hasReturnedFromAbyss: false,
+        gazeActive: false
+      };
+
+      // =========================================================================
+      // DOM REFERENCES
+      // =========================================================================
+      const topNav = document.getElementById('top-nav');
+      const brandIcon = document.getElementById('brand-icon');
+      const brandTitle = document.getElementById('brand-title');
+      const brandSub = document.getElementById('brand-sub');
+      const navLinks = [
+        document.getElementById('nav-link-1'),
+        document.getElementById('nav-link-2'),
+        document.getElementById('nav-link-3'),
+        document.getElementById('nav-link-4')
+      ];
+      const openBookingBtn = document.getElementById('open-booking-btn');
+      const horrorOverlay = document.getElementById('horror-overlay');
+      const scanlines = document.getElementById('scanlines');
+      const depthHud = document.getElementById('depth-hud');
+      const hudDepth = document.getElementById('hud-depth');
+      const hudTemp = document.getElementById('hud-temp');
+      const hudGeo = document.getElementById('hud-geo');
+      const hudBar = document.getElementById('hud-bar');
+
+      const audioToggleBtn = document.getElementById('audio-toggle-btn');
+      const audioDot = document.getElementById('audio-dot');
+      const audioLabel = document.getElementById('audio-label');
+      const audioToast = document.getElementById('audio-toast');
+
+      const stat1 = document.getElementById('stat-1');
+      const stat2 = document.getElementById('stat-2');
+      const stat3 = document.getElementById('stat-3');
+      const stat4 = document.getElementById('stat-4');
+      const stat3Label = document.getElementById('stat-3-label');
+
+      const pkgHeading = document.getElementById('pkg-heading');
+      const testHeading = document.getElementById('test-heading');
+      const abyssCorridor = document.getElementById('abyss-corridor');
+      const flashlightLayer = document.getElementById('flashlight-layer');
+
+      // =========================================================================
+      // WEB AUDIO API PROCEDURAL HORROR SOUNDSCAPE (Zero external audio files)
+      // =========================================================================
+      let audioCtx = null;
+      let masterGain = null;
+      let windGain = null;
+      let windFilter = null;
+      let droneGain = null;
+      let droneOsc1 = null;
+      let droneOsc2 = null;
+      let pipingGain = null;
+      let pipingOsc = null;
+      let heartbeatTimer = null;
+
+      function initAudio() {
+        if (audioCtx) return;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        audioCtx = new AudioContextClass();
+
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.001;
+        masterGain.connect(audioCtx.destination);
+
+        // 1. Antarctic Wind (Filtered White Noise)
+        const bufferSize = audioCtx.sampleRate * 2;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const whiteNoise = audioCtx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        windFilter = audioCtx.createBiquadFilter();
+        windFilter.type = 'bandpass';
+        windFilter.frequency.value = 420;
+        windFilter.Q.value = 2.5;
+
+        windGain = audioCtx.createGain();
+        windGain.gain.value = 0.05;
+
+        whiteNoise.connect(windFilter);
+        windFilter.connect(windGain);
+        windGain.connect(masterGain);
+        whiteNoise.start();
+
+        // 2. Abyssal Sub-bass Drone (Detuned oscillators)
+        droneOsc1 = audioCtx.createOscillator();
+        droneOsc2 = audioCtx.createOscillator();
+        droneOsc1.type = 'sawtooth';
+        droneOsc2.type = 'sine';
+        droneOsc1.frequency.value = 46;
+        droneOsc2.frequency.value = 48.5;
+
+        const droneFilter = audioCtx.createBiquadFilter();
+        droneFilter.type = 'lowpass';
+        droneFilter.frequency.value = 115;
+
+        droneGain = audioCtx.createGain();
+        droneGain.gain.value = 0.0001;
+
+        droneOsc1.connect(droneFilter);
+        droneOsc2.connect(droneFilter);
+        droneFilter.connect(droneGain);
+        droneGain.connect(masterGain);
+        droneOsc1.start();
+        droneOsc2.start();
+
+        // 3. Eerie Lovecraftian "Musical Piping" (Tekeli-li flute harmonic)
+        pipingOsc = audioCtx.createOscillator();
+        pipingOsc.type = 'sine';
+        pipingOsc.frequency.value = 587.33;
+
+        const pipingLfo = audioCtx.createOscillator();
+        const pipingLfoGain = audioCtx.createGain();
+        pipingLfo.frequency.value = 0.35;
+        pipingLfoGain.gain.value = 28;
+        pipingLfo.connect(pipingLfoGain);
+        pipingLfoGain.connect(pipingOsc.frequency);
+        pipingLfo.start();
+
+        pipingGain = audioCtx.createGain();
+        pipingGain.gain.value = 0.0001;
+        pipingOsc.connect(pipingGain);
+        pipingGain.connect(masterGain);
+        pipingOsc.start();
+      }
+
+      function triggerSubThud(intensity = 0.45) {
+        if (!state.audioEnabled || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(92, now);
+        osc.frequency.exponentialRampToValueAtTime(28, now + 0.55);
+        g.gain.setValueAtTime(intensity, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 0.7);
+      }
+
+      function scheduleHeartbeat() {
+        if (heartbeatTimer) clearTimeout(heartbeatTimer);
+        if (!state.audioEnabled) return;
+
+        if (state.depth > 0.62 || state.gazeActive) {
+          const strength = state.gazeActive ? 0.5 : Math.min(0.42, (state.depth - 0.6) * 0.9);
+          triggerSubThud(strength);
+          setTimeout(() => {
+            if (state.audioEnabled && (state.depth > 0.62 || state.gazeActive)) {
+              triggerSubThud(strength * 0.65);
+            }
+          }, 210);
+        }
+        const interval = state.gazeActive ? 780 : Math.max(820, 1800 - state.depth * 950);
+        heartbeatTimer = setTimeout(scheduleHeartbeat, interval);
+      }
+
+      function updateAudioByDepth(d) {
+        if (!state.audioEnabled || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        // Wind deepens and howls
+        windFilter.frequency.setTargetAtTime(260 + d * 680, now, 0.25);
+        windGain.gain.setTargetAtTime(0.04 + d * 0.16, now, 0.25);
+        // Sub-bass drone swells after 0.25
+        const droneAmt = d < 0.22 ? 0.001 : Math.min(0.32, (d - 0.22) * 0.45);
+        droneGain.gain.setTargetAtTime(state.gazeActive ? 0.45 : droneAmt, now, 0.3);
+        droneOsc1.frequency.setTargetAtTime(46 - d * 12, now, 0.4);
+        // Eerie piping after 0.55
+        const pipeAmt = d < 0.52 ? 0.0001 : Math.min(0.045, (d - 0.52) * 0.09);
+        pipingGain.gain.setTargetAtTime(state.gazeActive ? 0.07 : pipeAmt, now, 0.4);
+      }
+
+      function setAudioEnabled(enable) {
+        state.audioEnabled = enable;
+        if (enable) {
+          initAudio();
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          if (masterGain && audioCtx) {
+            masterGain.gain.setTargetAtTime(0.85, audioCtx.currentTime, 0.2);
+          }
+          audioDot.className = 'w-2 h-2 rounded-full bg-red-500 animate-pulse';
+          audioLabel.textContent = '音效运行中';
+          audioToast.classList.add('hidden');
+          updateAudioByDepth(state.depth);
+          scheduleHeartbeat();
+        } else {
+          if (masterGain && audioCtx) {
+            masterGain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.15);
+          }
+          if (heartbeatTimer) clearTimeout(heartbeatTimer);
+          audioDot.className = 'w-2 h-2 rounded-full bg-slate-400';
+          audioLabel.textContent = '开启音效';
+        }
+      }
+
+      audioToggleBtn.addEventListener('click', () => setAudioEnabled(!state.audioEnabled));
+      document.getElementById('toast-enable-audio').addEventListener('click', () => setAudioEnabled(true));
+      document.getElementById('toast-close').addEventListener('click', () => audioToast.classList.add('hidden'));
+
+      // =========================================================================
+      // SCROLL-DRIVEN REALITY DECAY ENGINE
+      // =========================================================================
+      function lerp(a, b, t) {
+        return a + (b - a) * Math.max(0, Math.min(1, t));
+      }
+
+      function updateDepthVisuals() {
+        const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        const d = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+        state.depth = d;
+
+        // Smooth background color interpolation: White -> Cold Fog -> Abyssal Black
+        let r, g, b;
+        if (d < 0.22) {
+          const t = d / 0.22;
+          r = Math.round(lerp(255, 241, t));
+          g = Math.round(lerp(255, 245, t));
+          b = Math.round(lerp(255, 249, t));
+        } else if (d < 0.48) {
+          const t = (d - 0.22) / 0.26;
+          r = Math.round(lerp(241, 12, t));
+          g = Math.round(lerp(245, 16, t));
+          b = Math.round(lerp(249, 24, t));
+        } else {
+          const t = (d - 0.48) / 0.52;
+          r = Math.round(lerp(12, 2, t));
+          g = Math.round(lerp(16, 2, t));
+          b = Math.round(lerp(24, 4, t));
+        }
+        document.documentElement.style.setProperty('--bg-r', r);
+        document.documentElement.style.setProperty('--bg-g', g);
+        document.documentElement.style.setProperty('--bg-b', b);
+
+        // Text colors for transitional headings
+        const darkMode = d > 0.30;
+        pkgHeading.style.color = darkMode ? '#f1f5f9' : '#0f172a';
+        testHeading.style.color = d > 0.36 ? '#f8fafc' : '#0f172a';
+
+        // Mutate Top Navbar progressively
+        if (d < 0.25) {
+          topNav.className = 'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/90 backdrop-blur-md border-b border-slate-200/80';
+          brandIcon.className = 'w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center font-bold text-sm shadow-sm';
+          brandTitle.textContent = 'AURELIA';
+          brandTitle.className = 'font-semibold tracking-wider text-slate-900 text-sm sm:text-base';
+          brandSub.textContent = 'POLAR SANCTUARY';
+          navLinks[0].textContent = '极境体验';
+          navLinks[1].textContent = '定制行程';
+          navLinks[2].textContent = '旅者回响';
+          navLinks[3].textContent = '高原图鉴';
+          navLinks.forEach(l => l.className = 'text-slate-600 hover:text-sky-600 transition-colors');
+          openBookingBtn.textContent = '预约极地之旅';
+          openBookingBtn.className = 'px-4 py-2 rounded-full text-xs sm:text-sm font-medium bg-slate-900 text-white hover:bg-sky-700 transition-all shadow-sm';
+        } else if (d < 0.58) {
+          topNav.className = 'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-slate-950/85 backdrop-blur-md border-b border-slate-800';
+          brandIcon.className = 'w-8 h-8 rounded-lg bg-teal-900 text-teal-300 border border-teal-700 flex items-center justify-center font-bold text-sm';
+          brandTitle.textContent = 'AUREL1A // 77°S';
+          brandTitle.className = 'font-mono-tech font-bold tracking-wider text-slate-100 text-sm sm:text-base';
+          brandSub.textContent = 'MISKATONIC SURVEY';
+          navLinks[0].textContent = '表层营地';
+          navLinks[1].textContent = '受限协议';
+          navLinks[2].textContent = '失联记录';
+          navLinks[3].textContent = '黑色山脉';
+          navLinks.forEach(l => l.className = 'text-slate-400 hover:text-teal-300 transition-colors font-mono-tech text-xs');
+          openBookingBtn.textContent = '状态：失联';
+          openBookingBtn.className = 'px-4 py-2 rounded-full text-xs font-mono-tech bg-slate-800 text-amber-400 border border-amber-700/60 hover:bg-slate-700 transition-all';
+        } else {
+          topNav.className = 'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-black/85 backdrop-blur-md border-b border-red-950/70';
+          brandIcon.className = 'w-8 h-8 rounded-lg bg-red-950 text-red-500 border border-red-800 flex items-center justify-center font-bold text-sm';
+          brandTitle.textContent = d > 0.82 ? 'TEKELI-LI' : 'SECTOR-04 [BREACH]';
+          brandTitle.className = 'font-mono-tech font-bold tracking-[0.2em] text-red-500 text-sm sm:text-base';
+          brandSub.textContent = 'NON-EUCLIDEAN ZONE';
+          navLinks[0].textContent = '无法返回';
+          navLinks[1].textContent = '解剖台';
+          navLinks[2].textContent = '盲区走廊';
+          navLinks[3].textContent = '它在看着你';
+          navLinks.forEach(l => l.className = 'text-red-400/70 hover:text-red-300 transition-colors font-mono-tech text-xs');
+          openBookingBtn.textContent = '信号中断';
+          openBookingBtn.className = 'px-4 py-2 rounded-full text-xs font-mono-tech bg-red-950/80 text-red-300 border border-red-800 transition-all';
+        }
+
+        // Mutate top stats if user scrolls past 0.25 (so if they scroll back up, reality feels subtly altered!)
+        if (d > 0.28) {
+          stat1.textContent = '0.0%';
+          stat2.textContent = '10,972 m';
+          stat3.textContent = '14 具';
+          stat3Label.textContent = '未解冻桶状标本';
+          stat4.textContent = 'NO SIGNAL';
+        }
+
+        // Vignette & Scanlines intensity
+        horrorOverlay.style.opacity = d < 0.30 ? 0 : Math.min(0.92, (d - 0.30) * 1.35);
+        scanlines.style.opacity = d < 0.42 ? 0 : Math.min(0.45, (d - 0.42) * 0.8);
+
+        // Depth HUD
+        if (d > 0.30) {
+          depthHud.style.opacity = '1';
+          const meters = Math.round((d - 0.25) * 5600);
+          hudDepth.textContent = `-${Math.max(0, meters).toLocaleString()} m`;
+          hudTemp.textContent = d > 0.78 ? '+14.2 °C (异常)' : `${(-12.4 - d * 56).toFixed(1)} °C`;
+          hudTemp.className = d > 0.78 ? 'text-red-400 font-bold' : 'text-sky-300';
+          hudGeo.textContent = d > 0.75 ? 'NON-EUCLIDEAN' : (d > 0.48 ? 'DISTORTED (+14°)' : 'EUCLIDEAN');
+          hudGeo.className = d > 0.75 ? 'text-red-500 font-bold' : 'text-amber-400';
+          hudBar.style.width = `${Math.round(d * 100)}%`;
+          hudBar.className = d > 0.75 ? 'h-full bg-red-600 transition-all duration-150' : 'h-full bg-teal-400 transition-all duration-150';
+        } else {
+          depthHud.style.opacity = '0';
+        }
+
+        // Show audio suggestion toast once around 35% scroll
+        if (d > 0.34 && !state.audioToastShown && !state.audioEnabled) {
+          state.audioToastShown = true;
+          audioToast.classList.remove('hidden');
+        }
+
+        // Micro-tremor at extreme climax depth
+        const climaxImg = document.getElementById('shoggoth-img');
+        if (d > 0.90) {
+          climaxImg.classList.add('tremor-active');
+        } else {
+          climaxImg.classList.remove('tremor-active');
+        }
+
+        updateAudioByDepth(d);
+      }
+
+      window.addEventListener('scroll', updateDepthVisuals, { passive: true });
+      window.addEventListener('resize', () => {
+        resizeCanvases();
+        updateDepthVisuals();
+      });
+
+      // =========================================================================
+      // INTERACTIVE PACKAGE TABS & BOOKING MODAL
+      // =========================================================================
+      const tierTabs = document.querySelectorAll('.tier-tab');
+      const priceEls = document.querySelectorAll('[data-price-leisure]');
+
+      tierTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const mode = tab.dataset.tierTab;
+          tierTabs.forEach((t) => {
+            t.classList.remove('bg-white', 'text-slate-900', 'shadow-sm', 'bg-red-950', 'text-red-300');
+            t.classList.add('text-slate-600');
+          });
+          if (mode === 'deep') {
+            tab.classList.remove('text-slate-600');
+            tab.classList.add('bg-red-950', 'text-red-300', 'shadow-sm');
+            triggerSubThud(0.35);
+          } else {
+            tab.classList.remove('text-slate-600');
+            tab.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+          }
+          priceEls.forEach((el) => {
+            const key = mode === 'leisure' ? 'priceLeisure' : (mode === 'science' ? 'priceScience' : 'priceDeep');
+            el.textContent = el.dataset[key];
+          });
+        });
+      });
+
+      // Booking Modal Logic
+      const bookingModal = document.getElementById('booking-modal');
+      const bookingFormView = document.getElementById('booking-form-view');
+      const bookingConfirmView = document.getElementById('booking-confirm-view');
+      const guestPlanSelect = document.getElementById('guest-plan');
+
+      function openBooking(preselectedPlan) {
+        if (preselectedPlan) guestPlanSelect.value = preselectedPlan;
+        bookingFormView.classList.remove('hidden');
+        bookingConfirmView.classList.add('hidden');
+        bookingModal.classList.remove('hidden');
+        bookingModal.classList.add('flex');
+      }
+
+      function closeBooking() {
+        bookingModal.classList.add('hidden');
+        bookingModal.classList.remove('flex');
+      }
+
+      openBookingBtn.addEventListener('click', () => openBooking());
+      document.getElementById('hero-consult-btn').addEventListener('click', () => openBooking());
+      document.getElementById('close-booking-btn').addEventListener('click', closeBooking);
+      document.getElementById('booking-done-btn').addEventListener('click', closeBooking);
+      bookingModal.addEventListener('click', (e) => {
+        if (e.target === bookingModal) closeBooking();
+      });
+
+      document.querySelectorAll('.select-plan-btn').forEach((btn) => {
+        btn.addEventListener('click', () => openBooking(btn.dataset.plan));
+      });
+
+      document.getElementById('cursed-tier-btn').addEventListener('click', () => {
+        document.getElementById('mountains-section').scrollIntoView({ behavior: 'smooth' });
+      });
+
+      document.getElementById('booking-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('guest-name').value.trim() || '尊贵宾客';
+        const plan = guestPlanSelect.value;
+        const date = document.getElementById('guest-date').value || '2026-12';
+        bookingFormView.classList.add('hidden');
+        bookingConfirmView.classList.remove('hidden');
+        document.getElementById('booking-confirm-msg').textContent =
+          `${name}，您的「${plan}」（${date}）已登记。请注意：内陆风带近期出现异常低频共振，出发前请勿携带金属乐器。`;
+        document.getElementById('booking-confirm-code').textContent =
+          `确认编号：AUR-77S-TEKELI-${Math.floor(1000 + Math.random() * 9000)}`;
+      });
+
+      // =========================================================================
+      // MOUNTAINS SENSOR MODE SWITCHER
+      // =========================================================================
+      const sensorBtns = document.querySelectorAll('.sensor-btn');
+      const mountainsImg = document.getElementById('mountains-img');
+      const geometryOverlay = document.getElementById('geometry-overlay');
+      const sensorReadout = document.getElementById('sensor-readout');
+
+      const sensorDescriptions = {
+        optical: '[光学模式] 海拔高度计溢出 · 探测到人工切割的巨型五角柱廊 · 前方帐篷无应答',
+        thermal: '[热成像异常] 冰层下 4.2km 处存在巨型恒温腔体 (+14.2°C) · 检测到缓慢移动的庞大热源',
+        geometry: '[非欧几何测绘] 建筑墙体呈现 72°/108° 五重辐射对称 · 视口空间曲率超出人类视觉皮层耐受阈值'
+      };
+
+      sensorBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.sensor;
+          sensorBtns.forEach((b) => {
+            b.className = 'sensor-btn px-3.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 hover:text-white transition-all';
+          });
+          btn.className = 'sensor-btn px-3.5 py-2 rounded-lg bg-teal-500/20 border border-teal-400/60 text-teal-300 transition-all';
+
+          mountainsImg.classList.remove('filter-optical', 'filter-thermal', 'filter-geometry');
+          mountainsImg.classList.add(`filter-${mode}`);
+          geometryOverlay.style.opacity = mode === 'optical' ? '0' : '1';
+          sensorReadout.textContent = sensorDescriptions[mode];
+          triggerSubThud(0.28);
+        });
+      });
+
+      // =========================================================================
+      // SPECIMEN #04 AUTOPSY DOSSIER TABS & BREACH TRIGGER
+      // =========================================================================
+      const dossierContent = document.getElementById('dossier-content');
+      const dossierTabs = document.querySelectorAll('.dossier-tab');
+      const specimenImg = document.getElementById('specimen-img');
+      const breachOverlay = document.getElementById('specimen-breach-overlay');
+      const breachStamp = document.getElementById('breach-stamp');
+      const pulseStatus = document.getElementById('pulse-status');
+
+      const dossierHTML = {
+        anatomy: `
+          <p><strong class="text-teal-300 font-mono-tech">[外部形态]</strong> 体长 2.4 米，躯干呈深灰色五棱桶状，表皮如坚韧皮革，表面布满可折叠的膜质双翼。顶端无人类意义上的头颅，取而代之的是一枚直径 60 厘米的五角星状辐射头冠。</p>
+          <p><strong class="text-teal-300 font-mono-tech">[组织切片]</strong> 切开表皮后未发现血液，仅有粘稠的深绿色粘液。细胞结构同时具备蕨类植物的光合微管与高度发达的五叶神经节——它至少在寒武纪之前就已存在。</p>
+          <p class="text-xs font-mono-tech text-slate-500">注：莱克教授在记录完第 7 段后停止了书写，字迹在最后一行剧烈扭曲。</p>
+        `,
+        acoustics: `
+          <p><strong class="text-amber-300 font-mono-tech">[声学异常]</strong> 尽管该标本已被彻底冰封在零下 68 度的冰块中，高敏拾音器仍在其星状头冠内部录到了规律的五音阶震动。</p>
+          <p><strong class="text-amber-300 font-mono-tech">[频谱分析]</strong> 波形与我们在黑色山脉深处听到的“笛声”完全吻合。它不是在发出求救信号——它在回应地底更深处某个体积大它数千倍的物体。</p>
+          <div class="p-3 rounded bg-black/70 border border-amber-900/50 font-mono-tech text-xs text-amber-400">
+            解码回声片段："...不要唤醒奴隶... 它们学会了模仿..."
+          </div>
+        `,
+        containment: `
+          <p class="text-red-400 font-mono-tech font-bold">⚠ 实时监控告警：4号冷库温控系统于 11 分钟前被从内部切断。</p>
+          <p>冰块表面的裂缝正在以肉眼可见的速度扩张。冰水混合着深绿色的粘液漫过了实验室地板。监控画面最后一帧显示，那枚五角星头冠上的五只棱镜眼，正齐刷刷地转向摄像头。</p>
+          <p class="text-red-300 font-serif-sc text-base">“它解冻了。而且它刚刚离开了屏幕。”</p>
+        `
+      };
+
+      function renderDossier(key) {
+        dossierContent.innerHTML = dossierHTML[key];
+        dossierTabs.forEach((t) => {
+          const active = t.dataset.dossier === key;
+          if (key === 'containment' && active) {
+            t.className = 'dossier-tab px-3.5 py-2 rounded bg-red-900/80 text-white border border-red-500';
+          } else if (active) {
+            t.className = 'dossier-tab px-3.5 py-2 rounded bg-slate-800 text-white border border-slate-500';
+          } else {
+            t.className = 'dossier-tab px-3.5 py-2 rounded bg-transparent text-slate-400 border border-slate-800 hover:text-white';
+          }
+        });
+
+        if (key === 'containment' && !state.containmentBreached) {
+          state.containmentBreached = true;
+          specimenImg.style.transform = 'scale(1.12)';
+          specimenImg.style.filter = 'contrast(1.4) brightness(0.65) saturate(0.7)';
+          breachOverlay.style.backgroundColor = 'rgba(127, 29, 29, 0.35)';
+          breachStamp.classList.remove('hidden');
+          pulseStatus.textContent = '⚠ 信号暴走 · 目标脱离冷库';
+          triggerSubThud(0.55);
+        }
+      }
+
+      dossierTabs.forEach((tab) => {
+        tab.addEventListener('click', () => renderDossier(tab.dataset.dossier));
+      });
+      renderDossier('anatomy');
+
+      // =========================================================================
+      // HOSTILE / UNCANNY EVADE BUTTON
+      // =========================================================================
+      const evadeBtn = document.getElementById('evade-btn');
+      const evadeMessages = [
+        '撤离通道已被黑色粘液封死',
+        '气压异常：无法向上浮出',
+        '别点我。回头看看黑暗里。',
+        'TEKELI-LI // 门已经关上了'
+      ];
+      evadeBtn.addEventListener('click', () => {
+        const msg = evadeMessages[Math.min(state.evadeClicks, evadeMessages.length - 1)];
+        state.evadeClicks++;
+        evadeBtn.textContent = msg;
+        evadeBtn.classList.remove('bg-slate-800', 'text-slate-200');
+        evadeBtn.classList.add('bg-red-950', 'text-red-300', 'border-red-700');
+        triggerSubThud(0.4);
+      });
+
+      // =========================================================================
+      // FLASHLIGHT CURSOR TRACKING IN ABYSS CORRIDOR
+      // =========================================================================
+      function updateFlashlight(clientX, clientY) {
+        state.mouseX = clientX;
+        state.mouseY = clientY;
+        const rect = abyssCorridor.getBoundingClientRect();
+        const localX = clientX - rect.left;
+        const localY = clientY - rect.top;
+        flashlightLayer.style.setProperty('--local-x', `${localX}px`);
+        flashlightLayer.style.setProperty('--local-y', `${localY}px`);
+      }
+
+      window.addEventListener('mousemove', (e) => updateFlashlight(e.clientX, e.clientY), { passive: true });
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+          updateFlashlight(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: true });
+
+      // =========================================================================
+      // FINAL CLIMAX INTERACTION: GAZE INTO THE ABYSS & RESET
+      // =========================================================================
+      const gazeModal = document.getElementById('abyss-gaze-modal');
+      const gazeImg = document.getElementById('gaze-img');
+      const gazeBtn = document.getElementById('gaze-abyss-btn');
+      const surfaceEscapeBtn = document.getElementById('surface-escape-btn');
+      const resetExperienceBtn = document.getElementById('reset-experience-btn');
+
+      gazeBtn.addEventListener('click', () => {
+        state.gazeActive = true;
+        gazeModal.classList.add('active');
+        setTimeout(() => {
+          gazeImg.style.transform = 'scale(1.28)';
+        }, 60);
+        if (state.audioEnabled) {
+          updateAudioByDepth(1);
+          triggerSubThud(0.75);
+          scheduleHeartbeat();
+        }
+      });
+
+      surfaceEscapeBtn.addEventListener('click', () => {
+        surfaceEscapeBtn.textContent = '信号弹熄灭了…… 你只能直视它';
+        surfaceEscapeBtn.classList.add('border-red-700', 'text-red-400');
+        triggerSubThud(0.45);
+      });
+
+      resetExperienceBtn.addEventListener('click', () => {
+        state.gazeActive = false;
+        state.hasReturnedFromAbyss = true;
+        gazeModal.classList.remove('active');
+        gazeImg.style.transform = 'scale(1.05)';
+        document.getElementById('returner-banner').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        updateAudioByDepth(0);
+      });
+
+      // =========================================================================
+      // PROCEDURAL CANVASES: (1) SNOW -> BLACK ASH, (2) WATCHING EYES, (3) PULSE
+      // =========================================================================
+      const atmosCanvas = document.getElementById('atmosphere-canvas');
+      const atmosCtx = atmosCanvas.getContext('2d');
+      const eyesCanvas = document.getElementById('eyes-canvas');
+      const eyesCtx = eyesCanvas.getContext('2d');
+      const pulseCanvas = document.getElementById('pulse-canvas');
+      const pulseCtx = pulseCanvas.getContext('2d');
+
+      let particles = [];
+      let eyes = [];
+      let pulsePhase = 0;
+
+      function resizeCanvases() {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        atmosCanvas.width = w;
+        atmosCanvas.height = h;
+        eyesCanvas.width = w;
+        eyesCanvas.height = h;
+
+        const pRect = pulseCanvas.getBoundingClientRect();
+        pulseCanvas.width = Math.max(200, Math.floor(pRect.width));
+        pulseCanvas.height = Math.max(48, Math.floor(pRect.height));
+
+        // Seed snow/ash particles
+        particles = Array.from({ length: 75 }, () => ({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: 1 + Math.random() * 2.4,
+          vx: -0.4 + Math.random() * 0.8,
+          vy: 0.6 + Math.random() * 1.6,
+          alpha: 0.25 + Math.random() * 0.55
+        }));
+
+        // Seed watching eyes positioned along margins and deep dark zones
+        eyes = Array.from({ length: 24 }, (_, idx) => {
+          const side = idx % 2 === 0;
+          const x = side
+            ? (0.04 + Math.random() * 0.24) * w
+            : (0.72 + Math.random() * 0.24) * w;
+          const y = (0.10 + Math.random() * 0.82) * h;
+          return {
+            x,
+            y,
+            rx: 13 + Math.random() * 14,
+            ry: 6 + Math.random() * 7,
+            openness: 0,
+            targetOpen: 0,
+            blinkPhase: Math.random() * Math.PI * 2,
+            threshold: 0.52 + (idx / 24) * 0.36
+          };
+        });
+      }
+
+      function renderLoop() {
+        const d = state.depth;
+        const w = atmosCanvas.width;
+        const h = atmosCanvas.height;
+
+        // 1. Snow -> Black Ash & Sickly Spores
+        atmosCtx.clearRect(0, 0, w, h);
+        if (d > 0.16) {
+          const vis = Math.min(1, (d - 0.16) * 2.2);
+          for (const p of particles) {
+            p.x += p.vx + (d > 0.5 ? Math.sin(p.y * 0.015) * 0.7 : 0);
+            p.y += p.vy * (d > 0.65 ? -0.45 : 1); // At deep abyss, ash eerily floats UPWARD!
+            if (p.y > h) p.y = -4;
+            if (p.y < -4) p.y = h + 2;
+            if (p.x > w) p.x = 0;
+            if (p.x < 0) p.x = w;
+
+            atmosCtx.beginPath();
+            atmosCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            if (d > 0.72) {
+              atmosCtx.fillStyle = `rgba(180, 220, 210, ${p.alpha * vis * 0.45})`;
+            } else {
+              atmosCtx.fillStyle = `rgba(226, 232, 240, ${p.alpha * vis * 0.55})`;
+            }
+            atmosCtx.fill();
+          }
+        }
+
+        // 2. Watching Eyes tracking cursor in the dark (active > 55% scroll or in final gaze)
+        eyesCtx.clearRect(0, 0, w, h);
+        if (d > 0.54 || state.gazeActive) {
+          for (const eye of eyes) {
+            const dist = Math.hypot(state.mouseX - eye.x, state.mouseY - eye.y);
+            const activeForDepth = state.gazeActive || d >= eye.threshold;
+            // Eyes shy away / blink shut if flashlight shines directly on them (unless in final gaze!)
+            const blindedByLight = !state.gazeActive && dist < 135;
+            eye.targetOpen = activeForDepth && !blindedByLight ? 1 : 0;
+            eye.openness += (eye.targetOpen - eye.openness) * 0.06;
+
+            if (eye.openness < 0.04) continue;
+
+            const angle = Math.atan2(state.mouseY - eye.y, state.mouseX - eye.x);
+            const pupilShift = Math.min(eye.rx * 0.32, dist * 0.03);
+            const px = eye.x + Math.cos(angle) * pupilShift;
+            const py = eye.y + Math.sin(angle) * pupilShift;
+            const curRy = eye.ry * eye.openness;
+
+            eyesCtx.save();
+            // Outer pale sclera glow
+            eyesCtx.beginPath();
+            eyesCtx.ellipse(eye.x, eye.y, eye.rx, curRy, 0, 0, Math.PI * 2);
+            eyesCtx.fillStyle = state.gazeActive
+              ? `rgba(235, 245, 240, ${0.78 * eye.openness})`
+              : `rgba(205, 225, 220, ${0.42 * eye.openness})`;
+            eyesCtx.shadowColor = state.gazeActive ? 'rgba(239, 68, 68, 0.7)' : 'rgba(148, 163, 184, 0.45)';
+            eyesCtx.shadowBlur = 14;
+            eyesCtx.fill();
+            eyesCtx.clip();
+
+            // Dark iris & slit-like uncanny pupil
+            eyesCtx.beginPath();
+            eyesCtx.arc(px, py, curRy * 0.72, 0, Math.PI * 2);
+            eyesCtx.fillStyle = '#090d12';
+            eyesCtx.fill();
+
+            // Tiny wet specular glint
+            eyesCtx.beginPath();
+            eyesCtx.arc(px - 2, py - 2, Math.max(1.2, curRy * 0.2), 0, Math.PI * 2);
+            eyesCtx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            eyesCtx.fill();
+            eyesCtx.restore();
+          }
+        }
+
+        // 3. Specimen #04 Live Brainwave Oscilloscope
+        const pw = pulseCanvas.width;
+        const ph = pulseCanvas.height;
+        pulseCtx.fillStyle = '#04070b';
+        pulseCtx.fillRect(0, 0, pw, ph);
+
+        pulseCtx.beginPath();
+        pulseCtx.strokeStyle = state.containmentBreached ? '#ef4444' : '#2dd4bf';
+        pulseCtx.lineWidth = 1.6;
+        pulsePhase += state.containmentBreached ? 0.16 : 0.06;
+
+        for (let x = 0; x < pw; x++) {
+          const norm = x / pw;
+          let y = ph / 2;
+          const spike = Math.sin(norm * 28 - pulsePhase) * Math.exp(-Math.pow((norm - 0.5) * 4.5, 2));
+          const amp = state.containmentBreached ? ph * 0.42 : ph * 0.28;
+          const jitter = state.containmentBreached ? (Math.random() - 0.5) * 6 : (Math.random() - 0.5) * 1.4;
+          y += spike * amp + jitter;
+          if (x === 0) pulseCtx.moveTo(x, y);
+          else pulseCtx.lineTo(x, y);
+        }
+        pulseCtx.stroke();
+
+        requestAnimationFrame(renderLoop);
+      }
+
+      // Initialize on load
+      window.addEventListener('load', () => {
+        resizeCanvases();
+        updateDepthVisuals();
+        requestAnimationFrame(renderLoop);
+      });
+    })();
+  </script>
+</body>
+</html>
